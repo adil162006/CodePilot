@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0a0e14" />
+    <title>CodePilot — Workflow Studio</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <div class="ambient ambient-one" aria-hidden="true"></div>
+    <div class="ambient ambient-two" aria-hidden="true"></div>
+
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#top" aria-label="CodePilot home">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="none">
+              <path d="M16 3.5 27 9.8v12.4L16 28.5 5 22.2V9.8L16 3.5Z" stroke="currentColor" stroke-width="1.6" />
+              <path d="m11 12-4 4 4 4m10-8 4 4-4 4m-3-10-4 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+          <span class="brand-copy">
+            <strong>CodePilot</strong>
+            <span>WORKFLOW STUDIO</span>
+          </span>
+        </a>
+
+        <div class="topbar-tools">
+          <label class="api-control" for="apiBase">
+            <span>API</span>
+            <input id="apiBase" type="url" value="http://127.0.0.1:8000" spellcheck="false" aria-label="Backend API address" />
+            <button id="checkConnection" class="icon-button" type="button" title="Check backend connection" aria-label="Check backend connection">
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M16.2 8.4A6.3 6.3 0 0 0 5.1 5.7L3.8 7M3.8 7V3.8M3.8 7H7m-3.2 4.6a6.3 6.3 0 0 0 11.1 2.7l1.3-1.3m0 0v3.2m0-3.2H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </button>
+          </label>
+          <div id="connectionStatus" class="connection-badge is-checking" role="status">
+            <span class="connection-dot"></span>
+            <span class="connection-label">Checking API</span>
+          </div>
+        </div>
+      </header>
+
+      <main id="top">
+        <section class="hero">
+          <div class="hero-copy">
+            <div class="eyebrow"><span class="eyebrow-line"></span> YOUR PROJECT, IN MOTION</div>
+            <h1>Ship clearer code<br /><span>with a second set of eyes.</span></h1>
+            <p>Upload a project and let CodePilot review bugs, code quality, and documentation in one workflow. You stay in control of every proposed patch.</p>
+          </div>
+          <div class="hero-note">
+            <span class="hero-note-icon" aria-hidden="true">✦</span>
+            <div><strong>One connected workflow</strong><span>Debug · Quality · Documentation</span></div>
+          </div>
+        </section>
+
+        <div class="workspace-grid">
+          <section class="panel upload-panel" aria-labelledby="uploadHeading">
+            <div class="panel-heading">
+              <div>
+                <span class="step-label">01 <span>/ INPUT</span></span>
+                <h2 id="uploadHeading">Bring in your project</h2>
+              </div>
+              <span class="subtle-badge">TEXT FILES</span>
+            </div>
+
+            <div id="dropZone" class="drop-zone" tabindex="0" role="button" aria-label="Drop project files here or browse">
+              <input id="fileInput" type="file" multiple hidden />
+              <input id="folderInput" type="file" webkitdirectory directory multiple hidden />
+              <div class="drop-icon" aria-hidden="true">
+                <svg viewBox="0 0 28 28" fill="none"><path d="M14 18V5m0 0L9 10m5-5 5 5M6 17.5v3A2.5 2.5 0 0 0 8.5 23h11a2.5 2.5 0 0 0 2.5-2.5v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              </div>
+              <strong>Drop files or a project folder here</strong>
+              <span>Source code and text files · up to 100 files</span>
+              <div class="drop-actions">
+                <button id="browseFiles" class="button button-secondary" type="button">Browse files</button>
+                <button id="browseFolder" class="button button-quiet" type="button">Choose folder</button>
+              </div>
+            </div>
+
+            <div class="file-list-heading">
+              <div><span class="section-kicker">PROJECT FILES</span><span id="fileCount" class="count-pill">0</span></div>
+              <button id="clearFiles" class="text-button" type="button" disabled>Clear all</button>
+            </div>
+            <div id="selectedFiles" class="selected-files" aria-live="polite">
+              <div class="empty-files">Your selected files will appear here.</div>
+            </div>
+
+            <div class="upload-footer">
+              <div class="upload-footnote"><span class="lock-icon" aria-hidden="true">⌑</span><span>Files are kept in an isolated job folder under <code>data/agent_projects</code>.</span></div>
+              <button id="runWorkflow" class="button button-primary" type="button" disabled>
+                <span>Run full workflow</span>
+                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10h11m0 0-4.5-4.5M15 10l-4.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              </button>
+            </div>
+            <div id="uploadError" class="inline-error" role="alert" hidden></div>
+          </section>
+
+          <section class="panel workflow-panel" aria-labelledby="workflowHeading">
+            <div class="panel-heading">
+              <div>
+                <span class="step-label">02 <span>/ WORKFLOW</span></span>
+                <h2 id="workflowHeading">Agent run</h2>
+              </div>
+              <span id="jobStatus" class="status-pill status-idle"><span class="status-dot"></span><span>Ready</span></span>
+            </div>
+
+            <div class="workflow-intro">
+              <span class="workflow-orbit" aria-hidden="true"><span></span><span></span><span></span></span>
+              <div><strong id="workflowTitle">Waiting for a project</strong><p id="workflowDescription">Your agents will move through each stage in sequence.</p></div>
+            </div>
+
+            <ol id="pipelineSteps" class="pipeline-steps">
+              <li class="pipeline-step" data-stage="debugger">
+                <span class="pipeline-marker"><span>01</span></span>
+                <span class="pipeline-copy"><strong>Debugger</strong><small>Find and validate fixes</small></span>
+                <span class="pipeline-state">Waiting</span>
+              </li>
+              <li class="pipeline-step" data-stage="code_quality">
+                <span class="pipeline-marker"><span>02</span></span>
+                <span class="pipeline-copy"><strong>Code quality</strong><small>Review clarity and structure</small></span>
+                <span class="pipeline-state">Waiting</span>
+              </li>
+              <li class="pipeline-step" data-stage="documentation">
+                <span class="pipeline-marker"><span>03</span></span>
+                <span class="pipeline-copy"><strong>Documentation</strong><small>Generate project guidance</small></span>
+                <span class="pipeline-state">Waiting</span>
+              </li>
+            </ol>
+
+            <div id="approvalPanel" class="approval-panel" hidden>
+              <div class="approval-heading">
+                <span class="approval-icon" aria-hidden="true">!</span>
+                <div><strong>Review proposed patches</strong><p id="approvalNote">Choose which validated patches to apply.</p></div>
+              </div>
+              <div id="patchList" class="patch-list"></div>
+              <div class="approval-actions">
+                <button id="selectAllPatches" class="text-button" type="button">Select all</button>
+                <div class="button-row">
+                  <button id="rejectPatches" class="button button-secondary" type="button">Reject all</button>
+                  <button id="approvePatches" class="button button-primary button-compact" type="button" disabled>Approve selected</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="job-meta">
+              <span>JOB ID</span>
+              <code id="jobId">—</code>
+            </div>
+          </section>
+        </div>
+
+        <div class="results-grid">
+          <section class="panel response-panel" aria-labelledby="responseHeading">
+            <div class="panel-heading results-heading">
+              <div>
+                <span class="step-label">03 <span>/ AGENT RESPONSE</span></span>
+                <h2 id="responseHeading">What the agents found</h2>
+              </div>
+              <span id="responseCount" class="subtle-badge">NO RESPONSE</span>
+            </div>
+            <div id="responseEmpty" class="results-empty">
+              <span class="empty-spark" aria-hidden="true">✳</span>
+              <strong>Results will land here</strong>
+              <span>Start a workflow to see summaries and generated documentation.</span>
+            </div>
+            <div id="responseContent" class="response-content" aria-live="polite" hidden></div>
+            <div id="jobError" class="job-error" role="alert" hidden></div>
+          </section>
+
+          <section class="panel files-panel" aria-labelledby="filesHeading">
+            <div class="panel-heading results-heading">
+              <div>
+                <span class="step-label">04 <span>/ OUTPUT</span></span>
+                <h2 id="filesHeading">Project files</h2>
+              </div>
+              <span id="outputCount" class="subtle-badge">0 FILES</span>
+            </div>
+            <div id="filesEmpty" class="results-empty files-empty">
+              <span class="file-empty-icon" aria-hidden="true">{ }</span>
+              <strong>Updated code appears here</strong>
+              <span>When the run finishes, browse and copy the resulting text files.</span>
+            </div>
+            <div id="fileResults" class="file-results" hidden>
+              <div id="resultFileList" class="result-file-list"></div>
+              <div class="code-viewer">
+                <div class="code-toolbar">
+                  <span id="previewPath">Select a file</span>
+                  <div class="code-toolbar-actions">
+                    <span id="changedBadge" class="changed-badge" hidden>UPDATED</span>
+                    <button id="copyFile" class="icon-button" type="button" title="Copy file" aria-label="Copy file" disabled>
+                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="7" y="6" width="9" height="11" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M13 6V4.8A1.8 1.8 0 0 0 11.2 3H5.8A1.8 1.8 0 0 0 4 4.8v7.4A1.8 1.8 0 0 0 5.8 14H7" stroke="currentColor" stroke-width="1.4"/></svg>
+                    </button>
+                    <button id="downloadFile" class="icon-button" type="button" title="Download file" aria-label="Download file" disabled>
+                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 3.5v9m0 0 3.5-3.5M10 12.5 6.5 9M4 14.5v1A1.5 1.5 0 0 0 5.5 17h9a1.5 1.5 0 0 0 1.5-1.5v-1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                  </div>
+                </div>
+                <pre id="codePreview"><code></code></pre>
+              </div>
+              <div id="omittedFiles" class="omitted-files" hidden></div>
+            </div>
+          </section>
+        </div>
+      </main>
+
+      <footer class="footer"><span>CODEPILOT WORKFLOW STUDIO</span><span>Local workspace · Human-approved patches</span></footer>
+    </div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>
